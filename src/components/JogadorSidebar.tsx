@@ -23,7 +23,7 @@ interface JogadorSidebarProps {
 }
 
 export const JogadorSidebar: React.FC<JogadorSidebarProps> = ({ 
-  titulo, players, idPrefix = "", isDrawingMode, 
+  players, idPrefix = "", isDrawingMode, 
   listaTimes, selectedTeamId, onTeamChange, onDeletePlayer, variante 
 }) => {
   // Agrupar jogadores por posição
