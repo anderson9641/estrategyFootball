@@ -1,33 +1,42 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import React from 'react';
 
 interface JogadorProps {
   id: string;
   nome: string;
-  posicao?: { x: number; y: number };
-  foto?: string;
-  numero?: number;
+  foto: string;
+  numero?: number | null;
   noCampo?: boolean;
+  posicao?: { x: number; y: number };
   isDragging?: boolean;
   isGhost?: boolean;
   onRemove?: () => void;
   disabled?: boolean;
+  variante?: 'casa' | 'visitante';
 }
 
-export const JogadorDraggable = ({ id, nome, posicao, noCampo, foto, numero, isDragging, isGhost, onRemove, disabled }: JogadorProps) => {
+export const JogadorDraggable = ({ 
+  id, nome, foto, numero, noCampo, posicao, 
+  isDragging, isGhost, onRemove, disabled, variante = 'casa' 
+}: JogadorProps) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: id,
     disabled: disabled,
   });
 
   const style = {
-    // Força o transform para nulo no elemento original para não deslocar nem 1px
     transform: isDragging ? 'translate3d(0, 0, 0)' : CSS.Translate.toString(transform),
     top: posicao?.y,
     left: posicao?.x,
     opacity: isGhost ? 0.3 : 1,
     transition: (isDragging || noCampo) ? 'none' : 'transform 200ms ease, opacity 200ms ease',
   };
+
+  const corPrimaria = variante === 'casa' ? 'blue' : 'red';
+  const ringColor = variante === 'casa' ? 'ring-blue-500' : 'ring-red-500';
+  const borderColor = variante === 'casa' ? 'border-blue-500' : 'border-red-500';
+  const bgColor = variante === 'casa' ? 'bg-blue-600' : 'bg-red-600';
 
   return (
     <div
@@ -42,44 +51,45 @@ export const JogadorDraggable = ({ id, nome, posicao, noCampo, foto, numero, isD
         }
       }}
       className={`
-        group flex outline-none
+        group flex outline-none touch-none
         ${isDragging ? 'cursor-grabbing z-[1000] !opacity-100' : (disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing')}
-        touch-none
         ${noCampo 
-          ? 'absolute z-10 flex-col items-center justify-center gap-1 w-14 focus:ring-2 ring-red-500 rounded-xl ring-offset-2 ring-offset-gray-900' 
-          : `relative z-1 items-center gap-3 p-2 bg-gray-700/50 rounded-lg backdrop-blur-sm shadow-sm w-full box-border border border-transparent`
+          ? `absolute z-10 flex-col items-center justify-center gap-1 w-14 focus:ring-2 rounded-xl ring-offset-2 ring-offset-gray-900 ${ringColor}` 
+          : 'bg-gray-700 hover:bg-gray-600 border border-gray-600 p-2 rounded-lg items-center gap-3 w-full shadow-sm hover:shadow-md transition-shadow'
         }
-        ${!noCampo && !isDragging ? 'hover:bg-gray-700 hover:border-gray-500' : ''}
       `}
     >
-      <div className={`
-        ${noCampo || isDragging ? 'w-14 h-14 border-2 rounded-xl' : 'w-10 h-10 border rounded-full'} 
-        bg-gray-700 border-white/20 shadow-xl shrink-0 flex items-center justify-center relative
-      `}>
-        <div className="w-full h-full overflow-hidden rounded-[inherit]">
-          {foto ? (
-            <img src={foto} alt={nome} className="w-full h-full object-cover" />
-          ) : (
-            <div className="text-white/20 text-xs font-bold uppercase flex items-center justify-center h-full">
-              {nome.substring(0, 2)}
-            </div>
-          )}
-        </div>
-        {(noCampo || isDragging) && numero && (
-          <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center border-2 border-gray-900 shadow-lg z-20">
+      <div className={`relative flex-shrink-0 ${noCampo ? 'w-12 h-12' : 'w-10 h-10'}`}>
+        <img
+          src={foto}
+          alt={nome}
+          className={`w-full h-full rounded-full object-cover border-2 shadow-inner ${
+            noCampo ? borderColor : 'border-gray-600'
+          }`}
+        />
+        {numero && (
+          <div className={`
+            absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg
+            ${bgColor}
+          `}>
             {numero}
           </div>
         )}
       </div>
-      <span className={`
-        font-medium truncate
-        ${noCampo || isDragging
-          ? 'text-[10px] text-white bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm max-w-[80px]' 
-          : 'text-sm text-gray-200 group-hover:text-white'
-        }
-      `}>
-        {nome}
-      </span>
+
+      <div className={`flex flex-col min-w-0 ${noCampo ? 'items-center' : 'text-left'}`}>
+        <p className={`
+          leading-tight truncate font-bold
+          ${noCampo ? 'text-[10px] text-white bg-black/60 px-1.5 py-0.5 rounded shadow-sm' : 'text-sm text-gray-200'}
+        `}>
+          {nome}
+        </p>
+        {!noCampo && (
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider truncate">
+            {variante === 'casa' ? 'Time A' : 'Time B'}
+          </span>
+        )}
+      </div>
     </div>
   );
-};
+};
