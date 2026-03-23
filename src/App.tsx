@@ -1,53 +1,71 @@
 import { useState } from "react";
-import { DndContext } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { Campo } from "./components/Campo";
 import { JogadorDraggable } from "./components/JogadorDraggable";
-import dados from "./brasileirao.json";
+import dados from "./dados_times.json";
 
 interface JogadorEscalado {
   id: string;
   nome: string;
+  numero?: number;
+  posicao: string;
+  idade?: number;
   x: number;
   y: number;
   foto: string;
 }
 
-export default function App() {
-  const [indexTimeSelecionado, setIndexTimeSelecionado] = useState(-1);
-  const [escalacao, setEscalacao] = useState<JogadorEscalado[]>([]);
+const times = dados.map((item) => ({
+  id: item.response[0].team.id,
+  name: item.response[0].team.name,
+  logo: item.response[0].team.logo,
+  players: item.response[0].players,
+  colors: { primary: "#3b82f6", secondary: "#ffffff" }
+}));
 
-  const timeAtual = dados.teams[indexTimeSelecionado];
+export default function App() {
+  const [idTimeSelecionado, setIdTimeSelecionado] = useState<number>(-1);
+  const [escalacao, setEscalacao] = useState<JogadorEscalado[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const timeAtual = times.find(t => t.id === idTimeSelecionado);
+  const activePlayer = times
+    .flatMap((t) => t.players)
+    .find((p) => p.id.toString() === activeId) ||
+    escalacao.find((p) => p.id === activeId);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const removerJogador = (id: string) => {
+    setEscalacao((prev) => prev.filter((p) => p.id !== id));
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { over, active } = event;
+    setActiveId(null);
 
-    // 1. Verifica se soltou dentro do campo
     if (over && over.id === "campo-futebol") {
       const jogadorId = active.id as string;
-
-      // 2. Pegamos as dimensões do campo e do objeto arrastado
-      const campoRect = over.rect; // Retângulo do campo
-      const itemRect = active.rect.current.translated; // Onde o item está agora
+      const campoRect = over.rect;
+      const itemRect = active.rect.current.translated;
 
       if (campoRect && itemRect) {
-        // 3. Calculamos a posição relativa:
-        // Onde o item está (itemRect.left) menos onde o campo começa (campoRect.left)
         const xRelativo = itemRect.left - campoRect.left;
         const yRelativo = itemRect.top - campoRect.top;
 
         const jaEscalado = escalacao.find((p) => p.id === jogadorId);
 
         if (jaEscalado) {
-          // Se já estava no campo, apenas atualizamos para a nova posição
           setEscalacao((prev) =>
             prev.map((p) =>
               p.id === jogadorId ? { ...p, x: xRelativo, y: yRelativo } : p,
             ),
           );
         } else {
-          // Se está vindo da lista lateral pela primeira vez
-          const playerInfo = dados.teams
+          const playerInfo = times
             .flatMap((t) => t.players)
             .find((p) => p.id.toString() === jogadorId);
 
@@ -57,6 +75,9 @@ export default function App() {
               {
                 id: jogadorId,
                 nome: playerInfo.name,
+                numero: playerInfo.number ?? undefined,
+                posicao: playerInfo.position,
+                idade: playerInfo.age,
                 x: xRelativo,
                 y: yRelativo,
                 foto: playerInfo.photo
@@ -70,7 +91,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4 md:p-8">
-      {/* HEADER */}
       <header className="max-w-6xl mx-auto flex flex-wrap items-center gap-6 bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
         <img
           src={timeAtual ? timeAtual.logo : "https://img.freepik.com/vetores-premium/icone-simples-preto-do-jogador-de-futebol-isolado-no-fundo-branco_98402-68338.jpg"}
@@ -83,13 +103,13 @@ export default function App() {
             Selecione o Clube
           </label>
           <select
-            value={indexTimeSelecionado}
-            onChange={(e) => setIndexTimeSelecionado(Number(e.target.value))}
+            value={idTimeSelecionado}
+            onChange={(e) => setIdTimeSelecionado(Number(e.target.value))}
             className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="-1">Selecione um time</option>
-            {dados.teams.map((time, index) => (
-              <option key={time.id} value={index}>
+            {times.map((time) => (
+              <option key={time.id} value={time.id}>
                 {time.name}
               </option>
             ))}
@@ -104,34 +124,61 @@ export default function App() {
         </button>
       </header>
 
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <main className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-start">
-          {/* LISTA DE RESERVAS */}
-          <aside className="w-full lg:w-72 bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-inner">
+          <aside className="w-full lg:w-72 bg-gray-800 border border-gray-700 rounded-xl p-5 shadow-inner overflow-hidden">
             <h4
               className="text-lg font-bold mb-4 pb-2 border-b-4"
               style={{ borderColor: timeAtual ? timeAtual.colors.primary : "" }}
             >
-              {timeAtual ? timeAtual.name : ""}
+              {timeAtual ? timeAtual.name : "Plantel"}
             </h4>
-            <div className="flex flex-wrap lg:flex-col gap-3">
-              {timeAtual
-                ? timeAtual.players
-                    .filter(
-                      (p) => !escalacao.find((e) => e.id === p.id.toString()),
-                    )
-                    .map((p) => (
-                      <JogadorDraggable
-                        key={p.id}
-                        id={p.id.toString()}
-                        nome={p.name}
-                      />
-                    ))
-                : ""}
+            <div className="flex flex-col gap-6 h-[600px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
+              {timeAtual ? (
+                <>
+                  {["Goalkeeper", "Defender", "Midfielder", "Attacker"].map((pos) => {
+                    const playersInPos = timeAtual.players.filter(
+                      (p) => p.position === pos && !escalacao.find((e) => e.id === p.id.toString())
+                    );
+
+                    if (playersInPos.length === 0) return null;
+
+                    const posLabels: Record<string, string> = {
+                      Goalkeeper: "Goleiros",
+                      Defender: "Defensores",
+                      Midfielder: "Meio-Campistas",
+                      Attacker: "Atacantes"
+                    };
+
+                    return (
+                      <div key={pos} className="flex flex-col gap-2">
+                        <h5 className="text-xs uppercase tracking-widest text-gray-500 font-bold border-l-2 border-gray-600 pl-2">
+                          {posLabels[pos]}
+                        </h5>
+                        <div className="grid grid-cols-1 gap-2">
+                          {playersInPos.map((p) => (
+                            <JogadorDraggable
+                              key={p.id}
+                              id={p.id.toString()}
+                              nome={p.name}
+                              foto={p.photo}
+                              isGhost={activeId === p.id.toString()}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <p className="text-gray-500 text-sm italic">Selecione um time para ver o plantel</p>
+              )}
             </div>
           </aside>
 
-          {/* ÁREA DO CAMPO */}
           <section className="flex-1 w-full flex justify-center">
             <Campo>
               {escalacao.map((p) => (
@@ -139,16 +186,30 @@ export default function App() {
                   key={p.id}
                   id={p.id}
                   nome={p.nome}
-                  foto={
-                    p.foto
-                  }
+                  foto={p.foto}
+                  numero={p.numero}
                   noCampo
                   posicao={{ x: p.x, y: p.y }}
+                  isGhost={activeId === p.id}
+                  onRemove={() => removerJogador(p.id)}
                 />
               ))}
             </Campo>
           </section>
         </main>
+
+        <DragOverlay dropAnimation={null}>
+          {activeId ? (
+            <JogadorDraggable
+              id={activeId}
+              nome={'nome' in activePlayer! ? activePlayer.nome : (activePlayer as any).name}
+              foto={activeId.includes('escalado') || 'foto' in activePlayer! ? (activePlayer as any).foto : (activePlayer as any).photo}
+              numero={'numero' in activePlayer! ? activePlayer.numero : (activePlayer as any).number}
+              noCampo={true} // Forçamos o estilo de campo no overlay para o cálculo bater
+              isDragging
+            />
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );

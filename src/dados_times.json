@@ -1,3 +1,4 @@
+[
 {
 	"get": "players/squads",
 	"parameters": {
@@ -7074,3 +7075,4 @@
 		}
 	]
 }
+]
