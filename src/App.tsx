@@ -109,12 +109,12 @@ export default function App() {
       const activeIdStr = active.id as string;
       const isAlreadyInField = activeIdStr.startsWith('field-');
       const isRightSide = activeIdStr.includes('-right-') || (activeIdStr.startsWith('right-') && !isAlreadyInField);
-      
+
       const playerOriginalId = activeIdStr
         .replace('field-left-', '')
         .replace('field-right-', '')
         .replace('right-', '');
-      
+
       const campoRect = over.rect;
       const itemRect = active.rect.current.translated;
       const jogadorUniqueIdInField = isRightSide ? `field-right-${playerOriginalId}` : `field-left-${playerOriginalId}`;
@@ -128,7 +128,7 @@ export default function App() {
         if (jaEscalado) {
           setEscalacao((prev) =>
             prev.map((p) =>
-              (p.id === activeIdStr || p.id === jogadorUniqueIdInField) 
+              (p.id === activeIdStr || p.id === jogadorUniqueIdInField)
                 ? { ...p, x: xRelativo, y: yRelativo } : p,
             ),
           );
@@ -277,7 +277,7 @@ export default function App() {
           <div className={`flex items-stretch transition-all duration-500 ease-in-out ${isRightSidebarOpen ? 'w-72' : 'w-10'}`}>
             <button
               onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-              className="w-10 flex flex-col items-center justify-center gap-6 bg-gray-800 border border-gray-700 hover:bg-gray-700 transition-colors z-20"
+              className="w-10 flex flex-col items-center justify-center gap-10 bg-gray-800 border border-gray-700 hover:bg-gray-700 transition-colors z-20"
             >
               <div className="rotate-90 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.3em] text-gray-500">
                 {isRightSidebarOpen ? 'Recolher' : 'Visitante'}
