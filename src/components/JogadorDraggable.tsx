@@ -11,11 +11,13 @@ interface JogadorProps {
   isDragging?: boolean;
   isGhost?: boolean;
   onRemove?: () => void;
+  disabled?: boolean;
 }
 
-export const JogadorDraggable = ({ id, nome, posicao, noCampo, foto, numero, isDragging, isGhost, onRemove }: JogadorProps) => {
+export const JogadorDraggable = ({ id, nome, posicao, noCampo, foto, numero, isDragging, isGhost, onRemove, disabled }: JogadorProps) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: id,
+    disabled: disabled,
   });
 
   const style = {
@@ -31,9 +33,9 @@ export const JogadorDraggable = ({ id, nome, posicao, noCampo, foto, numero, isD
     <div
       ref={setNodeRef}
       style={style}
-      {...(isDragging ? {} : listeners)}
-      {...(isDragging ? {} : attributes)}
-      tabIndex={noCampo ? 0 : -1}
+      {...(isDragging || disabled ? {} : listeners)}
+      {...(isDragging || disabled ? {} : attributes)}
+      tabIndex={noCampo && !disabled ? 0 : -1}
       onKeyDown={(e) => {
         if (noCampo && onRemove && (e.key === 'Delete' || e.key === 'Backspace')) {
           onRemove();
@@ -41,7 +43,7 @@ export const JogadorDraggable = ({ id, nome, posicao, noCampo, foto, numero, isD
       }}
       className={`
         group flex outline-none
-        ${isDragging ? 'cursor-grabbing z-[1000] !opacity-100' : 'cursor-grab active:cursor-grabbing'}
+        ${isDragging ? 'cursor-grabbing z-[1000] !opacity-100' : (disabled ? 'cursor-default' : 'cursor-grab active:cursor-grabbing')}
         touch-none
         ${noCampo 
           ? 'absolute z-10 flex-col items-center justify-center gap-1 w-14 focus:ring-2 ring-red-500 rounded-xl ring-offset-2 ring-offset-gray-900' 
