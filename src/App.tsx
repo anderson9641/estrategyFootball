@@ -6,6 +6,7 @@ import { JogadorDraggable } from "./components/JogadorDraggable";
 import dadosTimes from "./dados_times.json";
 import { TacticalBoard } from "./components/TacticalBoard";
 import type { Drawing } from "./components/TacticalBoard";
+import { ModalCadastroTime } from "./components/ModalCadastroTime";
 
 interface JogadorEscalado {
   id: string;
@@ -18,7 +19,7 @@ interface JogadorEscalado {
   foto: string;
 }
 
-const times = dadosTimes.map((item) => ({
+const timesIniciais = dadosTimes.map((item) => ({
   id: item.response[0].team.id,
   name: item.response[0].team.name,
   logo: item.response[0].team.logo,
@@ -27,12 +28,36 @@ const times = dadosTimes.map((item) => ({
 }));
 
 export default function App() {
+  const [listaTimes, setListaTimes] = useState(timesIniciais);
   const [idTimeSelecionado, setIdTimeSelecionado] = useState<number>(); // Flamengo default
   const [escalacao, setEscalacao] = useState<JogadorEscalado[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawingType, setDrawingType] = useState<'arrow' | 'freehand'>('arrow');
   const [drawings, setDrawings] = useState<Drawing[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleSaveCustomTeam = (nomeTime: string, nomesJogadores: string[]) => {
+    const novoId = Date.now();
+    const novoTime = {
+      id: novoId,
+      name: nomeTime,
+      logo: "https://img.freepik.com/vetores-premium/icone-simples-preto-do-jogador-de-futebol-isolado-no-fundo-branco_98402-68338.jpg",
+      colors: { primary: "#4b5563", secondary: "#ffffff" },
+      players: nomesJogadores.map((nome, index) => ({
+        id: (novoId + index),
+        name: nome,
+        number: index + 1,
+        position: "Defender", // Default
+        photo: "https://img.freepik.com/vetores-premium/icone-simples-preto-do-jogador-de-futebol-isolado-no-fundo-branco_98402-68338.jpg", // Placeholder
+        age: 25
+      }))
+    };
+
+    setListaTimes([novoTime, ...listaTimes]);
+    setIdTimeSelecionado(novoId);
+    setEscalacao([]);
+  };
 
   const toggleDrawingMode = () => {
     setIsDrawingMode(!isDrawingMode);
@@ -47,8 +72,8 @@ export default function App() {
     setDrawings([]);
   };
 
-  const timeAtual = times.find(t => t.id === idTimeSelecionado);
-  const activePlayer = times
+  const timeAtual = listaTimes.find(t => t.id === idTimeSelecionado);
+  const activePlayer = listaTimes
     .flatMap((t) => t.players)
     .find((p) => p.id.toString() === activeId) ||
     escalacao.find((p) => p.id === activeId);
@@ -83,7 +108,7 @@ export default function App() {
             ),
           );
         } else {
-          const playerInfo = times
+          const playerInfo = listaTimes
             .flatMap((t) => t.players)
             .find((p) => p.id.toString() === jogadorId);
 
@@ -126,7 +151,7 @@ export default function App() {
             className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="-1">Selecione um time</option>
-            {times.map((time) => (
+            {listaTimes.map((time) => (
               <option key={time.id} value={time.id}>
                 {time.name}
               </option>
@@ -134,12 +159,22 @@ export default function App() {
           </select>
         </div>
 
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all shadow-md flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          <span className="hidden md:inline">Novo Time</span>
+        </button>
+
         <div className="flex gap-2">
           <button
             onClick={toggleDrawingMode}
             className={`font-bold py-2.5 px-4 rounded-lg transition-all shadow-md flex items-center gap-2 ${isDrawingMode
-                ? "bg-yellow-500 text-black hover:bg-yellow-600"
-                : "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600"
+              ? "bg-yellow-500 text-black hover:bg-yellow-600"
+              : "bg-gray-700 text-white hover:bg-gray-600 border border-gray-600"
               }`}
             title={isDrawingMode ? "Sair do Modo Desenho" : "Ativar Modo Desenho (Estratégia)"}
           >
@@ -293,6 +328,12 @@ export default function App() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <ModalCadastroTime
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveCustomTeam}
+      />
     </div>
   );
 }
