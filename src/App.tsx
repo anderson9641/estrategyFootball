@@ -31,8 +31,8 @@ const timesIniciais = dadosTimes.map((item) => ({
 
 export default function App() {
   const [listaTimes, setListaTimes] = useState(timesIniciais);
-  const [idTimeEsquerda, setIdTimeEsquerda] = useState<number>(); // Flamengo
-  const [idTimeDireita, setIdTimeDireita] = useState<number>(); // Vasco
+  const [idTimeEsquerda, setIdTimeEsquerda] = useState<number>();
+  const [idTimeDireita, setIdTimeDireita] = useState<number>();
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const [escalacao, setEscalacao] = useState<JogadorEscalado[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -79,10 +79,11 @@ export default function App() {
   const timeEsquerda = listaTimes.find(t => t.id === idTimeEsquerda);
   const timeDireita = listaTimes.find(t => t.id === idTimeDireita);
 
-  const activePlayer = listaTimes
-    .flatMap((t) => t.players)
-    .find((p) => p.id.toString() === activeId || `right-${p.id}` === activeId) ||
-    escalacao.find((p) => p.id === activeId);
+  // Buscar informações do jogador sendo arrastado para o DragOverlay
+  const activePlayer = activeId ? (
+    listaTimes.flatMap(t => t.players).find(p => p.id.toString() === activeId || `right-${p.id}` === activeId) ||
+    escalacao.find(p => p.id === activeId)
+  ) : null;
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -106,9 +107,14 @@ export default function App() {
 
     if (over && over.id === "campo-futebol") {
       const activeIdStr = active.id as string;
-      const isRightSide = activeIdStr.startsWith('right-');
-      const playerOriginalId = isRightSide ? activeIdStr.replace('right-', '') : activeIdStr;
-
+      const isAlreadyInField = activeIdStr.startsWith('field-');
+      const isRightSide = activeIdStr.includes('-right-') || (activeIdStr.startsWith('right-') && !isAlreadyInField);
+      
+      const playerOriginalId = activeIdStr
+        .replace('field-left-', '')
+        .replace('field-right-', '')
+        .replace('right-', '');
+      
       const campoRect = over.rect;
       const itemRect = active.rect.current.translated;
       const jogadorUniqueIdInField = isRightSide ? `field-right-${playerOriginalId}` : `field-left-${playerOriginalId}`;
@@ -117,12 +123,13 @@ export default function App() {
         const xRelativo = itemRect.left - campoRect.left;
         const yRelativo = itemRect.top - campoRect.top;
 
-        const jaEscalado = escalacao.find((p) => p.id === jogadorUniqueIdInField);
+        const jaEscalado = escalacao.find((p) => p.id === activeIdStr || p.id === jogadorUniqueIdInField);
 
         if (jaEscalado) {
           setEscalacao((prev) =>
             prev.map((p) =>
-              p.id === jogadorUniqueIdInField ? { ...p, x: xRelativo, y: yRelativo } : p,
+              (p.id === activeIdStr || p.id === jogadorUniqueIdInField) 
+                ? { ...p, x: xRelativo, y: yRelativo } : p,
             ),
           );
         } else {
@@ -226,7 +233,6 @@ export default function App() {
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <main className="flex-1 flex gap-2 min-h-0">
-          {/* Sidebar Esquerda (Casa) */}
           <div className="hidden lg:flex w-72 flex-col min-h-0 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700">
             <JogadorSidebar
               titulo={timeEsquerda?.name || "Time A"}
@@ -240,9 +246,8 @@ export default function App() {
             />
           </div>
 
-          {/* Campo Central */}
           <div className="flex-1 flex justify-center items-center relative bg-gray-950/80 rounded-3xl border border-gray-800 overflow-hidden shadow-inner">
-            <div className="w-full flex justify-center items-center p-4">
+            <div className="w-full h-full flex justify-center items-center p-4">
               <Campo>
                 {escalacao.map((p) => (
                   <JogadorDraggable
@@ -253,7 +258,6 @@ export default function App() {
                     numero={p.numero}
                     noCampo
                     posicao={{ x: p.x, y: p.y }}
-                    isGhost={activeId === p.id}
                     onRemove={() => removerJogador(p.id)}
                     disabled={isDrawingMode}
                     variante={p.lado}
@@ -270,7 +274,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Sidebar Direita (Visitante / Retrátil) */}
           <div className={`flex items-stretch transition-all duration-500 ease-in-out ${isRightSidebarOpen ? 'w-72' : 'w-10'}`}>
             <button
               onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
@@ -306,16 +309,16 @@ export default function App() {
           </div>
         </main>
 
-        <DragOverlay dropAnimation={null}>
-          {activeId ? (
+        <DragOverlay dropAnimation={null} zIndex={1000}>
+          {activeId && activePlayer ? (
             <JogadorDraggable
               id={activeId}
               nome={(activePlayer as any).name || (activePlayer as any).nome}
               foto={(activePlayer as any).photo || (activePlayer as any).foto}
               numero={(activePlayer as any).number ?? (activePlayer as any).numero}
-              noCampo={true}
+              noCampo={activeId.startsWith('field-')}
               isDragging
-              variante={activeId.startsWith('right-') || (activePlayer as any).lado === 'visitante' ? 'visitante' : 'casa'}
+              variante={activeId.startsWith('right-') || activeId.includes('-right-') || (activePlayer as any).lado === 'visitante' ? 'visitante' : 'casa'}
             />
           ) : null}
         </DragOverlay>

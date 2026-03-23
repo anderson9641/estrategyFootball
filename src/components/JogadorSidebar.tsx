@@ -57,7 +57,7 @@ export const JogadorSidebar: React.FC<JogadorSidebarProps> = ({
         </select>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4 custom-scrollbar">
         {Object.entries(jogadoresPorPosicao).map(([posicao, atletas]) => (
           <div key={posicao} className="space-y-3">
             <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-2 mb-2 border-l-2 border-gray-700 ml-1">

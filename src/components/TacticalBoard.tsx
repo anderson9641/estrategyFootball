@@ -61,7 +61,7 @@ export const TacticalBoard: React.FC<TacticalBoardProps> = ({ isActive, drawingT
           id: Math.random().toString(36).substr(2, 9),
           type: drawingType,
           points: currentPoints,
-          color: '#fbbf24',
+          color: '#e91818ff',
         });
       }
     }
@@ -104,7 +104,7 @@ export const TacticalBoard: React.FC<TacticalBoardProps> = ({ isActive, drawingT
             x2={d.points[d.points.length - 1].x}
             y2={d.points[d.points.length - 1].y}
             stroke={d.color}
-            strokeWidth="6"
+            strokeWidth="4"
             markerEnd="url(#arrowhead)"
             strokeLinecap="round"
             style={{ color: d.color }}
@@ -116,7 +116,7 @@ export const TacticalBoard: React.FC<TacticalBoardProps> = ({ isActive, drawingT
             d={renderPath(d.points)}
             fill="none"
             stroke={d.color}
-            strokeWidth="6"
+            strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
             className="drop-shadow-md opacity-80"
