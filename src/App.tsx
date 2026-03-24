@@ -3,7 +3,7 @@ import { DndContext, DragOverlay } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { Campo } from "./components/Campo";
 import { JogadorDraggable } from "./components/JogadorDraggable";
-import dadosTimes from "./dados_times.json";
+import dadosTimes from "./dados_times2.json";
 import { TacticalBoard } from "./components/TacticalBoard";
 import type { Drawing } from "./components/TacticalBoard";
 import { ModalCadastroTime } from "./components/ModalCadastroTime";
